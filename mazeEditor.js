@@ -68,7 +68,7 @@ function mazeEditor(options) {
 		this._endpoint	= this.stage.image(this.options.theme.end, -50,0,this.options.blockSize-(this.options.margin*2),this.options.blockSize-(this.options.margin*2));
 	} else {
 		this._endpoint	= this.stage.rect(-50,0,this.options.blockSize-(this.options.margin*2),this.options.blockSize-(this.options.margin*2));
-		this._endpoint.attr("fill", "#FFFFFF");
+		this._endpoint.attr("fill", "#000000");
 		this._endpoint.attr("opacity", 1);
 		this._endpoint.attr("stroke-width", 0);
 	}
@@ -457,7 +457,7 @@ mazeEditor.prototype.createWall = function(x,y,type) {
 			state:	true
 		};
 		
-		wall.attr("fill", "#ffffff");
+		wall.attr("fill", "#000000");
 		wall.attr("opacity", this.options.opacity.active);
 		wall.attr("stroke-width", 0);
 		
