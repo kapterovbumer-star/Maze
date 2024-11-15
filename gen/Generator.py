@@ -3,32 +3,12 @@ import json
 import os
 
 class Generator:
-    def __init__(self, maze_data, maze_settings, px=0, py=0, padding=0):
-        self.px = px
-        self.py = py
-        self.padding = padding
-        
+    def __init__(self, maze_data, maze_settings, grid=False):
+        self.grid = grid
         self.settingsDir = os.path.dirname(maze_settings)
 
         self.maze_data = self.getJSON(maze_data)
         self.maze_settings = self.getJSON(maze_settings)
-
-        self.width = self.maze_settings["width"]
-        self.height = self.maze_settings["height"]
-
-        # Tile coordinates for the walls & floor
-        """
-            ⌜─⌝
-        """
-
-        self.tile_types = {
-            'corner': (16, 15),
-            'corner_out': (13, 18),
-            'wall': (17, 15),
-            'plain_wall': (5, 16),
-            'floor': (17, 16),
-            'none': (0, 0),
-        }
 
 
     def getJSON(self, filename):
@@ -38,11 +18,10 @@ class Generator:
     def render(self, filename="output/maze.png", theme="default"):
         tilemap = self.convertToTileMap(self.maze_data)
         self.renderTileMap(tilemap, filename, theme)
-        return tilemap
+        
         with open(f"{filename}.json", "w") as file:
-            file.write(json.dumps(tilemap, indent=4).replace("NaN","null"))
-
-        self.renderTileMap(tilemap, filename)
+            file.write(json.dumps(tilemap).replace("NaN","null"))
+        return tilemap
 
 
 
@@ -165,32 +144,41 @@ class Generator:
         return output # [x][y]
     
 
-    def renderTileMap(self, tilemap, filename="output/maze.png", theme="default"):
-        from PIL import Image
-
+    def renderTileMap(self, tilemap, filename="output/maze.png", theme="default", tile_size=64):
         tile_types = self.maze_settings["themes"][theme]
-        spritesheet_filename = self.maze_settings["spritesheet"]
-        sprite_filename = f"{self.settingsDir}/{spritesheet_filename}"
 
-        # Load the sprite sheet
-        sprite_sheet = Image.open(sprite_filename)
-        sheet_width, sheet_height = sprite_sheet.size
-
-        # Compute the size of each sprite
-        sprite_width = sheet_width // self.width
-        sprite_height = sheet_height // self.height
+        sheets = {}
+        for name in self.maze_settings["spritesheets"].keys():
+            spriteSettings = self.maze_settings["spritesheets"][name]
+            sheet_filename = spriteSettings["filename"]
+            filepath = f"{self.settingsDir}/{sheet_filename}"
+            image = Image.open(filepath)
+            sheet_width, sheet_height = image.size
+            sprite_width = spriteSettings["width"]
+            sprite_height = spriteSettings["height"]
+            sheets[name] = {
+                "filename": filepath,
+                "image": image,
+                "w": sheet_width  // sprite_width,
+                "h": sheet_height // sprite_height,
+                "px": spriteSettings["px"],
+                "py": spriteSettings["py"]
+            }
 
         # Prepare the sprites dictionary
         sprites = {}
-        for tile_type, (tile_x, tile_y) in tile_types.items():
-            sprites[tile_type] = sprite_sheet.crop((
-                tile_x * sprite_width + self.px,
-                tile_y * sprite_height + self.py,
-                (tile_x + 1) * sprite_width - self.px,
-                (tile_y + 1) * sprite_height - self.py
+        for tile_type, (tile_x, tile_y, sheetname) in tile_types.items():
+            
+            sprite_width = sheets[sheetname]["w"]
+            sprite_height = sheets[sheetname]["h"]
+            sprites[tile_type] = sheets[sheetname]["image"].crop((
+                tile_x * sprite_width + sheets[name]["px"],
+                tile_y * sprite_height + sheets[name]["py"],
+                (tile_x + 1) * sprite_width - sheets[name]["px"],
+                (tile_y + 1) * sprite_height - sheets[name]["py"]
             ))
-        actual_sprite_width = sprite_width - (self.px*2)
-        actual_sprite_height = sprite_height - (self.py*2)
+        actual_sprite_width = sprite_width - (sheets[name]["px"]*2)
+        actual_sprite_height = sprite_height - (sheets[name]["py"]*2)
 
         grid_width = len(tilemap)
         grid_height = len(tilemap[0])
@@ -217,10 +205,11 @@ class Generator:
                 else:
                     # If tile type is not recognized, default to floor
                     maze_image.paste(sprites['floor'], (pos_x, pos_y))
-                #if y % 3 == 0:
-                #    draw.line([(pos_x, pos_y), (pos_x+actual_sprite_width*3, pos_y)], fill=(0,0,0), width=2)
-                #if x % 3 == 0:
-                #    draw.line([(pos_x, pos_y), (pos_x, pos_y+actual_sprite_height*3)], fill=(0,0,0), width=2)
+                if self.grid:
+                    if y % 3 == 0:
+                        draw.line([(pos_x, pos_y), (pos_x+actual_sprite_width*3, pos_y)], fill=(0,0,0), width=2)
+                    if x % 3 == 0:
+                        draw.line([(pos_x, pos_y), (pos_x, pos_y+actual_sprite_height*3)], fill=(0,0,0), width=2)
 
         # Save the maze image
         maze_image.save(filename)

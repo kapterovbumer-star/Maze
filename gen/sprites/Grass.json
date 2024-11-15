@@ -1,16 +1,30 @@
 {
-    "spritesheet": "Grass.png",
-    "width": 11,
-    "height": 7,
+    "spritesheets": {
+        "grass": {
+            "filename": "Grass.png",
+            "width": 11,
+            "height": 7,
+            "px": 0,
+            "py": 0
+        },
+        "megaman": {
+            "filename": "megaman.png",
+            "width": 24,
+            "height": 30,
+            "px": 1,
+            "py": 1
+        }
+    },
+    
     "themes": {
         "dirt": {
-            "corner": [4, 0],
-            "corner_out": [2, 2],
-            "corner_out2": [2, 2],
-            "wall": [1, 2],
-            "plain_wall": [1, 1],
-            "floor": [10, 6],
-            "none": [3, 3]
+            "corner": [4, 0, "grass"],
+            "corner_out": [2, 2, "grass"],
+            "corner_out2": [2, 2, "grass"],
+            "wall": [1, 2, "grass"],
+            "plain_wall": [1, 1, "grass"],
+            "floor": [17, 16, "megaman"],
+            "none": [3, 3, "grass"]
         }
     }
 }
