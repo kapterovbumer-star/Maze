@@ -1,0 +1,16 @@
+{
+    "spritesheet": "Grass.png",
+    "width": 11,
+    "height": 7,
+    "themes": {
+        "dirt": {
+            "corner": [4, 0],
+            "corner_out": [2, 2],
+            "corner_out2": [2, 2],
+            "wall": [1, 2],
+            "plain_wall": [1, 1],
+            "floor": [10, 6],
+            "none": [3, 3]
+        }
+    }
+}

@@ -1,77 +1,44 @@
-from PIL import Image
+from PIL import Image, ImageDraw
 import json
+import os
 
 class Generator:
-    def __init__(self, width=24, height=30, sprite_filename="sprites/megaman.png"):
-        self.width = width
-        self.height = height
-        self.sprite_filename = sprite_filename
+    def __init__(self, maze_data, maze_settings, px=0, py=0, padding=0):
+        self.px = px
+        self.py = py
+        self.padding = padding
+        
+        self.settingsDir = os.path.dirname(maze_settings)
+
+        self.maze_data = self.getJSON(maze_data)
+        self.maze_settings = self.getJSON(maze_settings)
+
+        self.width = self.maze_settings["width"]
+        self.height = self.maze_settings["height"]
+
         # Tile coordinates for the walls & floor
         """
             ⌜─⌝
-            | |
-            ⌞_⌟
         """
-        self.config = [
-            (4, 5),  # top-left corner
-            (5, 5),  # horizontal wall
-            (6, 5),  # top-right corner
 
-            (4, 6),  # vertical wall (left)
-            (5, 6),  # floor tile
-            (6, 6),  # vertical wall (right)
-
-            (4, 7),  # bottom-left corner
-            (5, 7),  # horizontal wall
-            (6, 7),  # bottom-right corner
-
-            (0, 5), # Plain wall
-        ]
-        # Map tile types to positions in self.config
         self.tile_types = {
-            'top_left': (4, 5),
-            'top_wall': (5, 5),
-            'top_right': (6, 5),
-
-            'left_wall': (4, 6),
-            'floor': (5, 6),
-            'right_wall': (6, 6),
-
-            'bottom_left': (4, 7),
-            'bottom_wall': (5, 7),
-            'bottom_right': (6, 7),
-
-            'wall': (0, 5),  # Default wall tile
-        }
-    
-    def loadSquare(self, x, y, wall):
-        self.tile_types = {
-            'top_left': (x+0, y+0),
-            'top_wall': (x+1, y+0),
-            'top_right': (x+2, y+0),
-
-            'left_wall': (x+0, y+1),
-            'floor': (x+1, y+1),
-            'right_wall': (x+2, y+1),
-
-            'bottom_left': (x+0, y+2),
-            'bottom_wall': (x+1, y+2),
-            'bottom_right': (x+2, y+2),
-
-            'wall': wall,  # Default wall tile
-        }
-    
-    def renderCell(self, cell):
-        mapping = {
-
+            'corner': (16, 15),
+            'corner_out': (13, 18),
+            'wall': (17, 15),
+            'plain_wall': (5, 16),
+            'floor': (17, 16),
+            'none': (0, 0),
         }
 
-    def setSpriteConfig(self, config):
-        self.config = config
 
-    def render(self, map_data, filename="output/maze.png"):
-        tilemap = self.convertToTileMap(map_data)
-
+    def getJSON(self, filename):
+        with open(filename, 'r') as file:
+            return json.load(file)
+        
+    def render(self, filename="output/maze.png", theme="default"):
+        tilemap = self.convertToTileMap(self.maze_data)
+        self.renderTileMap(tilemap, filename, theme)
+        return tilemap
         with open(f"{filename}.json", "w") as file:
             file.write(json.dumps(tilemap, indent=4).replace("NaN","null"))
 
@@ -79,80 +46,134 @@ class Generator:
 
 
 
-    def convertToTileMap(self, map_data):
-        num_rows = len(map_data['v'])
-        num_cols = len(map_data['v'][0])
-    
-    def convertToTileMap_old(self, map_data):
-        num_rows = len(map_data['v'])
-        num_cols = len(map_data['v'][0])
-        
-        # Create a larger grid to accommodate walls between cells
-        grid_width = num_cols * 2 + 1
-        grid_height = num_rows * 2 + 1
+    def convertToTileMap(self, maze_data):
+        num_rows = len(maze_data['v'])
+        num_cols = len(maze_data['v'][0])
+        grid_width = num_cols * 3
+        grid_height = num_rows * 3
+        tilemap = [[['none', 0] for _ in range(grid_width)] for _ in range(grid_height)]
+        for x in range(num_cols):
+            for y in range(num_rows):
+                cell = self.getCell(maze_data, x, y)
+                cellMap = self.getCellMap(cell)
 
-        # Initialize the tilemap with walls
-        tilemap = [['wall' for _ in range(grid_width)] for _ in range(grid_height)]
+                # Overwrite the corners
+                top_left = self.getCell(maze_data, x-1, y-1)
+                top_right = self.getCell(maze_data, x+1, y-1)
+                bottom_left = self.getCell(maze_data, x-1, y+1)
+                bottom_right = self.getCell(maze_data, x+1, y+1)
 
-        # Map the maze data into the tilemap
-        for y in range(num_rows):
-            for x in range(num_cols):
-                grid_x = x * 2 + 1
-                grid_y = y * 2 + 1
-                tilemap[grid_y][grid_x] = 'floor'
+                left = self.getCell(maze_data, x-1, y)
+                right = self.getCell(maze_data, x+1, y)
+                top = self.getCell(maze_data, x, y-1)
+                bottom = self.getCell(maze_data, x, y+1)
 
-                # Check for passage to the right
-                if x < num_cols - 1:
-                    if map_data['v'][y][x] == 0:
-                        tilemap[grid_y][grid_x + 1] = 'floor'
+                TOP = 0
+                RIGHT = 1
+                BOTTOM = 2
+                LEFT = 3
+                # [top, right, bottom, left]
 
-                # Check for passage below
-                if y < num_rows - 1:
-                    if map_data['h'][y][x] == 0:
-                        tilemap[grid_y + 1][grid_x] = 'floor'
+                # top left
+                if not cell[LEFT] and not cell[TOP]:
+                    cellMap[0][0] = ['corner_out', 0]
 
-        # Determine wall tiles based on surrounding tiles
-        for y in range(grid_height):
-            for x in range(grid_width):
-                if tilemap[y][x] != 'floor':
-                    # Determine walls around the current tile
-                    walls = {
-                        'up': y > 0 and tilemap[y - 1][x] != 'floor',
-                        'down': y < grid_height - 1 and tilemap[y + 1][x] != 'floor',
-                        'left': x > 0 and tilemap[y][x - 1] != 'floor',
-                        'right': x < grid_width - 1 and tilemap[y][x + 1] != 'floor'
-                    }
-                    if walls['up'] and not walls['right'] and not walls['down'] and walls['left']:
-                        tilemap[y][x] = 'top_left'
-                    elif walls['up'] and not walls['right'] and not walls['down'] and not walls['left']:
-                        tilemap[y][x] = 'top_wall'
-                    elif walls['up'] and walls['right'] and not walls['down'] and not walls['left']:
-                        tilemap[y][x] = 'top_right'
+                # top right
+                if not cell[RIGHT] and not cell[TOP]:
+                    cellMap[2][0] = ['corner_out', 3]
 
-                    elif not walls['up'] and not walls['right'] and not walls['down'] and walls['left']:
-                        tilemap[y][x] = 'left_wall'
-                    elif not walls['up'] and not walls['right'] and not walls['down'] and not walls['left']:
-                        tilemap[y][x] = 'floor'
-                    elif not walls['up'] and walls['right'] and not walls['down'] and not walls['left']:
-                        tilemap[y][x] = 'right_wall'
+                # bottom left
+                if not cell[LEFT] and not cell[BOTTOM]:
+                    cellMap[0][2] = ['corner_out', 1]
 
-                    elif not walls['up'] and not walls['right'] and walls['down'] and walls['left']:
-                        tilemap[y][x] = 'bottom_left'
-                    elif not walls['up'] and not walls['right'] and walls['down'] and not walls['left']:
-                        tilemap[y][x] = 'bottom_wall'
-                    elif not walls['up'] and walls['right'] and walls['down'] and not walls['left']:
-                        tilemap[y][x] = 'bottom_right'
+                # bottom right
+                if not cell[RIGHT] and not cell[BOTTOM]:
+                    cellMap[2][2] = ['corner_out', 2]
 
-                    elif not walls['up'] and not walls['right'] and not walls['down'] and not walls['left']:
-                        tilemap[y][x] = 'wall'
+                for _x in range(3):
+                    for _y in range(3):
+                        xx = x*3 + _x
+                        yy = y*3 + _y
+                        tilemap[xx][yy] = cellMap[_x][_y]
 
         return tilemap
 
-    def renderTileMap(self, tilemap, filename="output/maze.png"):
+    # Return a boolean with wall positions around that cell
+    def getCell(self, maze_data, x, y):
+        num_rows = len(maze_data['v'])
+        num_cols = len(maze_data['v'][0])
+        if x < 0 or x >= num_rows or y < 0 or y >= num_cols:
+            return [True, True, True, True]
+        
+        sideWalls = maze_data['v'] # side walls [x, y]
+        topWalls = maze_data['h'] # top walls [x, y]
+        top = topWalls[x][y]
+        right = sideWalls[x+1][y] if x<num_cols-1 and x >=0 else 1
+        bottom = topWalls[x][y+1] if y<num_rows-1 and y >=0 else 1
+        left = sideWalls[x][y] if x > 0 else 1
+        return [top, right, bottom, left]
+
+    
+    # Convert a cell wall array into a 3x3 tiled group
+    def getCellMap(self, cell):
+        default_tile = ['floor', 0] # tile, rotation
+        [top, right, bottom, left] = cell
+        output = [[default_tile,default_tile,default_tile],[default_tile,default_tile,default_tile],[default_tile,default_tile,default_tile]]
+        """
+            T
+        L       R
+            B
+        """
+        if top and left:
+            output[0][0] = ['corner', 0]
+        elif top and not left:
+            output[0][0] = ['wall', 0]
+        elif not top and left:
+            output[0][0] = ['wall', 1]
+        
+        if top and right:
+            output[2][0] = ['corner', 3]
+        elif top and not right:
+            output[2][0] = ['wall', 0]
+        elif not top and right:
+            output[2][0] = ['wall', 3]
+        
+        if bottom and right:
+            output[2][2] = ['corner', 2]
+        elif bottom and not right:
+            output[2][2] = ['wall', 2]
+        elif not bottom and right:
+            output[2][2] = ['wall', 3]
+
+        if bottom and left:
+            output[0][2] = ['corner', 1]
+        elif bottom and not left:
+            output[0][2] = ['wall', 2]
+        elif not bottom and left:
+            output[0][2] = ['wall', 1]
+
+        if top:
+            output[1][0] = ['wall', 0]
+        if left:
+            output[0][1] = ['wall', 1]
+        if bottom:
+            output[1][2] = ['wall', 2]
+        if right:
+            output[2][1] = ['wall', 3]
+        if top and left and bottom and right:
+            output[1][1] = ['plain_wall', 3]
+        return output # [x][y]
+    
+
+    def renderTileMap(self, tilemap, filename="output/maze.png", theme="default"):
         from PIL import Image
 
+        tile_types = self.maze_settings["themes"][theme]
+        spritesheet_filename = self.maze_settings["spritesheet"]
+        sprite_filename = f"{self.settingsDir}/{spritesheet_filename}"
+
         # Load the sprite sheet
-        sprite_sheet = Image.open(self.sprite_filename)
+        sprite_sheet = Image.open(sprite_filename)
         sheet_width, sheet_height = sprite_sheet.size
 
         # Compute the size of each sprite
@@ -161,35 +182,46 @@ class Generator:
 
         # Prepare the sprites dictionary
         sprites = {}
-        for tile_type, (tile_x, tile_y) in self.tile_types.items():
+        for tile_type, (tile_x, tile_y) in tile_types.items():
             sprites[tile_type] = sprite_sheet.crop((
-                tile_x * sprite_width,
-                tile_y * sprite_height,
-                (tile_x + 1) * sprite_width,
-                (tile_y + 1) * sprite_height
+                tile_x * sprite_width + self.px,
+                tile_y * sprite_height + self.py,
+                (tile_x + 1) * sprite_width - self.px,
+                (tile_y + 1) * sprite_height - self.py
             ))
+        actual_sprite_width = sprite_width - (self.px*2)
+        actual_sprite_height = sprite_height - (self.py*2)
 
-        grid_height = len(tilemap)
-        grid_width = len(tilemap[0])
+        grid_width = len(tilemap)
+        grid_height = len(tilemap[0])
 
-        maze_width = grid_width * sprite_width
-        maze_height = grid_height * sprite_height
+        maze_width = grid_width * actual_sprite_width
+        maze_height = grid_height * actual_sprite_height
 
         # Create the maze image
         maze_image = Image.new('RGBA', (maze_width, maze_height))
 
+        draw = ImageDraw.Draw(maze_image)
         # Render the maze
-        for y in range(grid_height):
-            for x in range(grid_width):
-                tile_type = tilemap[y][x]
-                pos_x = x * sprite_width
-                pos_y = y * sprite_height
+        for x in range(grid_width):
+            for y in range(grid_height):
+                tile_type = tilemap[x][y][0]
+                tile_rotation = tilemap[x][y][1]*90
+
+                pos_x = x * actual_sprite_width 
+                pos_y = y * actual_sprite_height
 
                 if tile_type in sprites:
-                    maze_image.paste(sprites[tile_type], (pos_x, pos_y))
+                    rotated_tile = sprites[tile_type].rotate(tile_rotation, expand=True)
+                    maze_image.paste(rotated_tile, (pos_x, pos_y))
                 else:
                     # If tile type is not recognized, default to floor
                     maze_image.paste(sprites['floor'], (pos_x, pos_y))
+                #if y % 3 == 0:
+                #    draw.line([(pos_x, pos_y), (pos_x+actual_sprite_width*3, pos_y)], fill=(0,0,0), width=2)
+                #if x % 3 == 0:
+                #    draw.line([(pos_x, pos_y), (pos_x, pos_y+actual_sprite_height*3)], fill=(0,0,0), width=2)
 
         # Save the maze image
         maze_image.save(filename)
+

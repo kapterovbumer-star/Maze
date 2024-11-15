@@ -1,0 +1,16 @@
+{
+    "spritesheet": "megaman.png",
+    "width": 24,
+    "height": 30,
+    "themes": {
+        "dirt": {
+            "corner": [16, 15],
+            "corner_out": [13, 18],
+            "corner_out2": [13, 3],
+            "wall": [17, 15],
+            "plain_wall": [5, 16],
+            "floor": [17, 16],
+            "none": [0, 0]
+        }
+    }
+}
