@@ -69,6 +69,8 @@ class Generator:
                 if not cell[RIGHT] and not cell[BOTTOM]:
                     cellMap[2][2] = ['corner_out', 2]
 
+                #if cell[LEFT] and cell[TOP] 
+
                 for _x in range(3):
                     for _y in range(3):
                         xx = x*3 + _x
@@ -76,6 +78,13 @@ class Generator:
                         tilemap[xx][yy] = cellMap[_x][_y]
 
         return tilemap
+    
+    def fixWalls(self, tilemap):
+        w = len(tilemap)
+        h = len(tilemap[0])
+        for x in range(w):
+            for y in range(h):
+                return
 
     # Return a boolean with wall positions around that cell
     def getCell(self, maze_data, x, y):
@@ -104,28 +113,28 @@ class Generator:
             B
         """
         if top and left:
-            output[0][0] = ['corner', 0]
+            output[0][0] = ['plain_wall', 0]
         elif top and not left:
             output[0][0] = ['wall', 0]
         elif not top and left:
             output[0][0] = ['wall', 1]
         
         if top and right:
-            output[2][0] = ['corner', 3]
+            output[2][0] = ['plain_wall', 3]
         elif top and not right:
             output[2][0] = ['wall', 0]
         elif not top and right:
             output[2][0] = ['wall', 3]
         
         if bottom and right:
-            output[2][2] = ['corner', 2]
+            output[2][2] = ['plain_wall', 2]
         elif bottom and not right:
             output[2][2] = ['wall', 2]
         elif not bottom and right:
             output[2][2] = ['wall', 3]
 
         if bottom and left:
-            output[0][2] = ['corner', 1]
+            output[0][2] = ['plain_wall', 1]
         elif bottom and not left:
             output[0][2] = ['wall', 2]
         elif not bottom and left:
@@ -144,7 +153,7 @@ class Generator:
         return output # [x][y]
     
 
-    def renderTileMap(self, tilemap, filename="output/maze.png", theme="default", tile_size=64):
+    def renderTileMap(self, tilemap, filename="output/maze.png", theme="default", tile_size=32):
         tile_types = self.maze_settings["themes"][theme]
 
         sheets = {}
@@ -177,8 +186,11 @@ class Generator:
                 (tile_x + 1) * sprite_width - sheets[name]["px"],
                 (tile_y + 1) * sprite_height - sheets[name]["py"]
             ))
-        actual_sprite_width = sprite_width - (sheets[name]["px"]*2)
-        actual_sprite_height = sprite_height - (sheets[name]["py"]*2)
+            sprites[tile_type] = sprites[tile_type].resize((tile_size, tile_size), resample=Image.LANCZOS)
+            sprites[tile_type] = sprites[tile_type].convert('RGBA')
+
+        actual_sprite_width = tile_size #sprite_width - (sheets[name]["px"]*2)
+        actual_sprite_height = tile_size #sprite_height - (sheets[name]["py"]*2)
 
         grid_width = len(tilemap)
         grid_height = len(tilemap[0])
@@ -193,6 +205,13 @@ class Generator:
         # Render the maze
         for x in range(grid_width):
             for y in range(grid_height):
+                pos_x = x * actual_sprite_width 
+                pos_y = y * actual_sprite_height
+                #maze_image.paste(sprites["floor"], (pos_x, pos_y))
+        
+        
+        for x in range(grid_width):
+            for y in range(grid_height):
                 tile_type = tilemap[x][y][0]
                 tile_rotation = tilemap[x][y][1]*90
 
@@ -201,7 +220,7 @@ class Generator:
 
                 if tile_type in sprites:
                     rotated_tile = sprites[tile_type].rotate(tile_rotation, expand=True)
-                    maze_image.paste(rotated_tile, (pos_x, pos_y))
+                    maze_image.paste(rotated_tile, (pos_x, pos_y), rotated_tile)
                 else:
                     # If tile type is not recognized, default to floor
                     maze_image.paste(sprites['floor'], (pos_x, pos_y))
@@ -210,7 +229,19 @@ class Generator:
                         draw.line([(pos_x, pos_y), (pos_x+actual_sprite_width*3, pos_y)], fill=(0,0,0), width=2)
                     if x % 3 == 0:
                         draw.line([(pos_x, pos_y), (pos_x, pos_y+actual_sprite_height*3)], fill=(0,0,0), width=2)
+        
 
+        start_x = self.maze_data["start"]["x"] * 3 * actual_sprite_width + actual_sprite_width
+        start_y = self.maze_data["start"]["y"] * 3 * actual_sprite_height + actual_sprite_height
+        maze_image.paste(sprites["start"], (start_x, start_y), sprites["start"])
+
+
+        end_x = self.maze_data["end"]["x"] * 3 * actual_sprite_width + actual_sprite_width
+        end_y = self.maze_data["end"]["y"] * 3 * actual_sprite_height + actual_sprite_height
+        maze_image.paste(sprites["end"], (end_x, end_y), sprites["end"])
+        
+        
+        
         # Save the maze image
         maze_image.save(filename)
 

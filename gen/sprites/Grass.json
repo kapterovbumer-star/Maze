@@ -13,18 +13,67 @@
             "height": 30,
             "px": 1,
             "py": 1
+        },
+        "roads": {
+            "filename": "Roads.png",
+            "width": 32,
+            "height": 12,
+            "px": 0,
+            "py": 0
+        },
+        "land": {
+            "filename": "Land.png",
+            "width": 8,
+            "height": 8,
+            "px": 0,
+            "py": 0
         }
     },
     
     "themes": {
-        "dirt": {
+        "grass": {
             "corner": [4, 0, "grass"],
             "corner_out": [2, 2, "grass"],
-            "corner_out2": [2, 2, "grass"],
+            "corner_out2": [13, 3, "megaman"],
             "wall": [1, 2, "grass"],
             "plain_wall": [1, 1, "grass"],
-            "floor": [17, 16, "megaman"],
-            "none": [3, 3, "grass"]
+            "floor": [10, 0, "grass"],
+            "none": [3, 3, "grass"],
+            "start": [0, 10, "megaman"],
+            "end": [0, 25, "megaman"]
+        },
+        "dirt": {
+            "corner": [7, 3, "land"],
+            "corner_out": [7, 2, "land"],
+            "corner_out2": [13, 3, "megaman"],
+            "wall": [0, 3, "land"],
+            "plain_wall": [0, 4, "land"],
+            "floor": [0, 2, "land"],
+            "none": [3, 3, "grass"],
+            "start": [0, 10, "megaman"],
+            "end": [0, 25, "megaman"]
+        },
+        "water": {
+            "corner": [0, 0, "land"],
+            "corner_out": [7, 5, "land"],
+            "corner_out2": [13, 3, "megaman"],
+            "wall": [0, 5, "land"],
+            "plain_wall": [7, 4, "land"],
+            "floor": [0, 4, "land"],
+            "none": [3, 3, "grass"],
+            "start": [0, 10, "megaman"],
+            "end": [0, 25, "megaman"]
+        },
+        "roads": {
+            "corner": [4, 0, "roads"],
+            "corner_out": [2, 2, "roads"],
+            "corner_out2": [13, 3, "megaman"],
+            "wall": [1, 2, "roads"],
+            "plain_wall": [1, 1, "roads"],
+            "floor": [10, 0, "grass"],
+            "none": [3, 3, "roads"],
+            "start": [0, 10, "megaman"],
+            "end": [0, 25, "megaman"]
         }
     }
 }
