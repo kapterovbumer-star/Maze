@@ -37,13 +37,13 @@ class Generator:
         grid_width = num_cols * 3
         grid_height = num_rows * 3
         tilemap = [[['none', 0] for _ in range(grid_width)] for _ in range(grid_height)]
-        for x in range(num_cols):
-            for y in range(num_rows):
+        for x in range(num_rows):
+            for y in range(num_cols):
                 cell = self.getCell(maze_data, x, y)
                 if x == 0 and y == 0:
-                    cell[3] = 0
-                if x == num_cols-1 and y == num_rows-1:
-                    cell[1] = 0
+                    cell[3] = 0 # Force open entry
+                if x == num_rows-1 and y == num_cols-1:
+                    cell[1] = 0 # Force open exit
                 cellMap = self.getCellMap(cell)
 
                 # Overwrite the corners
@@ -77,16 +77,10 @@ class Generator:
                         try:
                             tilemap[xx][yy] = cellMap[_x][_y]
                         except:
+                            print((xx, yy), len(tilemap))
                             continue
 
         return tilemap
-    
-    def fixWalls(self, tilemap):
-        w = len(tilemap)
-        h = len(tilemap[0])
-        for x in range(w):
-            for y in range(h):
-                return
 
     # Return a boolean with wall positions around that cell
     def getCell(self, maze_data, x, y):
@@ -98,8 +92,8 @@ class Generator:
         sideWalls = maze_data['v'] # side walls [x, y]
         topWalls = maze_data['h'] # top walls [x, y]
         top = topWalls[x][y]
-        right = sideWalls[x+1][y] if x<num_cols-1 and x >=0 else 1
-        bottom = topWalls[x][y+1] if y<num_rows-1 and y >=0 else 1
+        right = sideWalls[x+1][y] if x<num_rows-1 and x >=0 else 1
+        bottom = topWalls[x][y+1] if y<num_cols-1 and y >=0 else 1
         left = sideWalls[x][y] if x > 0 else 1
         return [top, right, bottom, left]
 
@@ -211,10 +205,12 @@ class Generator:
                 pos_y = y * actual_sprite_height
                 maze_image.paste(sprites["floor"], (pos_x, pos_y))
         
-        
+        print(grid_width, grid_height)
         for x in range(grid_width):
             for y in range(grid_height):
                 tile_type = tilemap[x][y][0]
+                #if y >= grid_width:
+                #    print((x, y), tile_type)
                 tile_rotation = tilemap[x][y][1]*90
 
                 pos_x = x * actual_sprite_width 

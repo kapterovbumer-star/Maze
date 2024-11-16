@@ -32,15 +32,13 @@ class MazeGenerator:
         self.endpoint = {'x': self.width - 1, 'y': self.height - 1}
 
     def generateGrid(self):
-        # Initialize walls
-        # Vertical walls: (width + 1) columns, each with height cells
+        # Initialize walls with dimensions [width][height]
         self.walls['v'] = [
             [{'state': True} for _ in range(self.height)]
-            for _ in range(self.width + 1)
+            for _ in range(self.width)
         ]
-        # Horizontal walls: width columns, each with (height + 1) cells
         self.walls['h'] = [
-            [{'state': True} for _ in range(self.height + 1)]
+            [{'state': True} for _ in range(self.height)]
             for _ in range(self.width)
         ]
 
@@ -71,25 +69,29 @@ class MazeGenerator:
         if not self.corners:
             return False
         # Adjust starting index based on difficulty
-        start = round(
-            ((10 - self.difficulty) / 10) * (len(self.corners) - 1)
-        )
+        start = round(((10 - self.difficulty) / 10) * (len(self.corners) - 1))
         if start < 0:
             start = 0
-        for index in range(start, len(self.corners)):
-            x, y = self.corners[index]
+        i = start
+        while i < len(self.corners):
+            x, y = self.corners[i]
             available = self.isCaseWalkable(x, y)
             if available:
                 self.genPos = {'x': x, 'y': y}
                 self.lastDir = {'x': 0, 'y': 0}
-                # Remove used corners to prevent revisiting
-                self.corners.pop(index)
+                # Remove used corner
+                self.corners.pop(i)
                 return True
             else:
-                # Remove from corners as it's no longer useful
-                self.corners.pop(index)
-                return self.hunt()
-        return False
+                # Remove from the list
+                self.corners.pop(i)
+                # Since we removed an element, do not increment i
+                continue
+            i += 1
+        if self.corners:
+            return self.hunt()
+        else:
+            return False
 
     def isCaseWalkable(self, x, y):
         available = []
@@ -105,17 +107,21 @@ class MazeGenerator:
 
     def deactivateWallBetween(self, x, y, dx, dy):
         if dx == 1:
-            # Moving right, deactivate vertical wall to the right of (x, y)
-            self.walls['v'][x + 1][y]['state'] = False
+            # Moving right, deactivate vertical wall at (x + 1, y)
+            self.deactivateWall('v', x + 1, y)
         elif dx == -1:
             # Moving left, deactivate vertical wall at (x, y)
-            self.walls['v'][x][y]['state'] = False
+            self.deactivateWall('v', x, y)
         elif dy == 1:
-            # Moving down, deactivate horizontal wall below (x, y)
-            self.walls['h'][x][y + 1]['state'] = False
+            # Moving down, deactivate horizontal wall at (x, y + 1)
+            self.deactivateWall('h', x, y + 1)
         elif dy == -1:
             # Moving up, deactivate horizontal wall at (x, y)
-            self.walls['h'][x][y]['state'] = False
+            self.deactivateWall('h', x, y)
+
+    def deactivateWall(self, wall_type, x, y):
+        if 0 <= x < self.width and 0 <= y < self.height:
+            self.walls[wall_type][x][y]['state'] = False
 
     def export(self):
         buffer = {
