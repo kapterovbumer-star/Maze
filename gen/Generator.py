@@ -7,7 +7,10 @@ class Generator:
         self.grid = grid
         self.settingsDir = os.path.dirname(maze_settings)
 
-        self.maze_data = self.getJSON(maze_data)
+        if isinstance(object, str):
+            self.maze_data = self.getJSON(maze_data)
+        else:
+            self.maze_data = maze_data
         self.maze_settings = self.getJSON(maze_settings)
 
 
@@ -28,25 +31,22 @@ class Generator:
     def convertToTileMap(self, maze_data):
         num_rows = len(maze_data['v'])
         num_cols = len(maze_data['v'][0])
+
+        maze_data['v'][-1][-1] = 0
+
         grid_width = num_cols * 3
         grid_height = num_rows * 3
         tilemap = [[['none', 0] for _ in range(grid_width)] for _ in range(grid_height)]
         for x in range(num_cols):
             for y in range(num_rows):
                 cell = self.getCell(maze_data, x, y)
+                if x == 0 and y == 0:
+                    cell[3] = 0
+                if x == num_cols-1 and y == num_rows-1:
+                    cell[1] = 0
                 cellMap = self.getCellMap(cell)
 
                 # Overwrite the corners
-                top_left = self.getCell(maze_data, x-1, y-1)
-                top_right = self.getCell(maze_data, x+1, y-1)
-                bottom_left = self.getCell(maze_data, x-1, y+1)
-                bottom_right = self.getCell(maze_data, x+1, y+1)
-
-                left = self.getCell(maze_data, x-1, y)
-                right = self.getCell(maze_data, x+1, y)
-                top = self.getCell(maze_data, x, y-1)
-                bottom = self.getCell(maze_data, x, y+1)
-
                 TOP = 0
                 RIGHT = 1
                 BOTTOM = 2
@@ -70,12 +70,14 @@ class Generator:
                     cellMap[2][2] = ['corner_out', 2]
 
                 #if cell[LEFT] and cell[TOP] 
-
                 for _x in range(3):
                     for _y in range(3):
                         xx = x*3 + _x
                         yy = y*3 + _y
-                        tilemap[xx][yy] = cellMap[_x][_y]
+                        try:
+                            tilemap[xx][yy] = cellMap[_x][_y]
+                        except:
+                            continue
 
         return tilemap
     
@@ -207,7 +209,7 @@ class Generator:
             for y in range(grid_height):
                 pos_x = x * actual_sprite_width 
                 pos_y = y * actual_sprite_height
-                #maze_image.paste(sprites["floor"], (pos_x, pos_y))
+                maze_image.paste(sprites["floor"], (pos_x, pos_y))
         
         
         for x in range(grid_width):
@@ -235,7 +237,7 @@ class Generator:
         start_y = self.maze_data["start"]["y"] * 3 * actual_sprite_height + actual_sprite_height
         maze_image.paste(sprites["start"], (start_x, start_y), sprites["start"])
 
-
+        sprites["end"] = sprites["end"].rotate(-90, expand=True)
         end_x = self.maze_data["end"]["x"] * 3 * actual_sprite_width + actual_sprite_width
         end_y = self.maze_data["end"]["y"] * 3 * actual_sprite_height + actual_sprite_height
         maze_image.paste(sprites["end"], (end_x, end_y), sprites["end"])

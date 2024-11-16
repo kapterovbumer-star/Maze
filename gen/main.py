@@ -1,6 +1,6 @@
 from Generator import *
 import json
 
-gen = Generator(grid=False, maze_data='maze-medium.json', maze_settings='sprites/Grass.json')
-renderResponse = gen.render(filename="output/maze-7.png", theme="water")
+gen = Generator(grid=False, maze_data='maze.json', maze_settings='sprites/Grass.json')
+renderResponse = gen.render(filename="output/maze-8.png", theme="water")
 
