@@ -18,13 +18,28 @@ class Generator:
         with open(filename, 'r') as file:
             return json.load(file)
         
+    def create_2d_array(self, width, height, default_value):
+        """Create a 2D array of given dimensions with a default value."""
+        return [[default_value for _ in range(width)] for _ in range(height)]
+
+    def paste_array(self, target, smaller_array, x, y):
+        """Paste the smaller array into the target array at the given top-left coordinate (x, y)."""
+        for i in range(len(smaller_array)):  # Rows in smaller array
+            for j in range(len(smaller_array[i])):  # Columns in smaller array
+                target_y = y + i
+                target_x = x + j
+                # Ensure within bounds of target array
+                if 0 <= target_y < len(target) and 0 <= target_x < len(target[0]):
+                    target[target_y][target_x] = smaller_array[i][j]
+
+
     def render(self, filename="output/maze.png", theme="default"):
         tilemap = self.convertToTileMap(self.maze_data)
         self.renderTileMap(tilemap, filename, theme)
         
         with open(f"{filename}.json", "w") as file:
             file.write(json.dumps(tilemap).replace("NaN","null"))
-        return tilemap
+        return filename
 
 
 
@@ -77,7 +92,7 @@ class Generator:
                         try:
                             tilemap[xx][yy] = cellMap[_x][_y]
                         except:
-                            print((xx, yy), len(tilemap))
+                            #print((xx, yy), len(tilemap))
                             continue
 
         return tilemap
@@ -203,9 +218,9 @@ class Generator:
             for y in range(grid_height):
                 pos_x = x * actual_sprite_width 
                 pos_y = y * actual_sprite_height
-                maze_image.paste(sprites["floor"], (pos_x, pos_y))
+                #maze_image.paste(sprites["floor"], (pos_x, pos_y))
         
-        print(grid_width, grid_height)
+        #print(grid_width, grid_height)
         for x in range(grid_width):
             for y in range(grid_height):
                 tile_type = tilemap[x][y][0]
@@ -231,15 +246,16 @@ class Generator:
 
         start_x = self.maze_data["start"]["x"] * 3 * actual_sprite_width + actual_sprite_width
         start_y = self.maze_data["start"]["y"] * 3 * actual_sprite_height + actual_sprite_height
-        maze_image.paste(sprites["start"], (start_x, start_y), sprites["start"])
+        #maze_image.paste(sprites["start"], (start_x, start_y), sprites["start"])
 
         sprites["end"] = sprites["end"].rotate(-90, expand=True)
         end_x = self.maze_data["end"]["x"] * 3 * actual_sprite_width + actual_sprite_width
         end_y = self.maze_data["end"]["y"] * 3 * actual_sprite_height + actual_sprite_height
-        maze_image.paste(sprites["end"], (end_x, end_y), sprites["end"])
+        #maze_image.paste(sprites["end"], (end_x, end_y), sprites["end"])
         
         
         
         # Save the maze image
         maze_image.save(filename)
+        return filename
 

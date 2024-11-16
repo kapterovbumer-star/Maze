@@ -71,7 +71,7 @@
             "wall": [0, 5, "land"],
             "plain_wall": [7, 4, "land"],
             "floor": [0, 4, "land"],
-            "none": [3, 3, "grass"],
+            "none": [0, 0, "land"],
             "start": [0, 10, "megaman"],
             "end": [0, 25, "megaman"]
         },
