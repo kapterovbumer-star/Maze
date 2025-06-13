@@ -95,3 +95,7 @@ class MazeGenerator {
 }
 
 module.exports = MazeGenerator;
+
+
+var maze = new MazeGenerator();
+console.log(maze.generate());
